@@ -7,6 +7,11 @@ secrets/
 *.key
 *.pem
 
+# Exception: throwaway demo CA committed on purpose for the demo deploy.
+# NOT a real secret — regenerate with scripts/gen-ca.sh for anything real.
+!deploy/demo-ca/rootCA.key
+!deploy/demo-ca/rootCA.crt
+
 # Local build artifacts
 /mpc-server
 /nanoca-build

@@ -9,15 +9,13 @@ services:
     envVars:
       - key: BASE_URL
         value: https://cert.mpc.ad
-      # CA cert/key are pasted as PEM into the Render dashboard (sync: false
-      # keeps the secret values out of this committed file). Generate them with
-      # scripts/gen-ca.sh, then paste the printed PEM blocks here in Render.
-      - key: CA_CERT_PEM
-        sync: false
-      - key: CA_KEY_PEM
-        sync: false
       - key: BADGER_DIR
         value: /data/badger
+      # The demo CA is baked into the image (deploy/demo-ca, see Dockerfile),
+      # so no CA config is required for the demo. To use your own CA instead,
+      # generate it with scripts/gen-ca.sh and add these in the dashboard:
+      #   CA_CERT_PEM  -> paste rootCA.crt PEM
+      #   CA_KEY_PEM   -> paste rootCA.key PEM
     disk:
       name: data
       mountPath: /data

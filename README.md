@@ -37,6 +37,14 @@ This fork adds a deployable wrapper in `cmd/mpc-server/` to run nanoca as a
 standalone ACME server for testing Fleet's Apple ACME configuration profile 
 flow. See `render.yaml` and `Dockerfile` for Render.com deployment.
 
+### Demo CA (baked into the image)
+
+For convenience this fork ships a throwaway demo CA in `deploy/demo-ca/`, which
+the `Dockerfile` bakes into the image. The demo therefore deploys to Render with
+**no CA configuration required**. That CA is disposable and public — never use
+it for anything real (see `deploy/demo-ca/README.md`). For real use, generate
+your own and override it (next sections).
+
 ### Generate a root CA
 
 Run the helper script (writes to the gitignored `secrets/` dir by default):
@@ -69,9 +77,13 @@ environment variables rather than mounted files.
 | `CA_KEY`       | `/etc/secrets/rootCA.key` | Root CA key file path (PKCS#8 PEM)            |
 | `BADGER_DIR`   | `/data/badger`            | Persistent storage path                       |
 
-On Render: `render.yaml` declares `CA_CERT_PEM` and `CA_KEY_PEM` with
-`sync: false`, so you paste the PEM values into the dashboard (they're not
-committed). The `*_PEM` parser accepts PKCS#8, PKCS#1 RSA, and SEC1 EC keys.
+Precedence: `*_PEM` > `CA_CERT`/`CA_KEY` file paths > the baked-in demo CA
+(the `Dockerfile` sets `CA_CERT`/`CA_KEY` to `/etc/nanoca/rootCA.*`). The
+`*_PEM` parser accepts PKCS#8, PKCS#1 RSA, and SEC1 EC keys.
+
+On Render, to use your own CA instead of the demo one, add `CA_CERT_PEM` and
+`CA_KEY_PEM` in the dashboard with the PEM values printed by `scripts/gen-ca.sh`
+(values stay out of the repo).
 
 POC use only: uses the `null` authorizer (any attested Apple device gets a 
 cert). Production deployments need a real authorizer.
