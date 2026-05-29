@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mpc-nanoca-server
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: BASE_URL
+        value: https://cert.mpc.ad
+      - key: BADGER_DIR
+        value: /data/badger
+      # The demo CA is baked into the image (deploy/demo-ca, see Dockerfile),
+      # so no CA config is required for the demo. To use your own CA instead,
+      # generate it with scripts/gen-ca.sh and add these in the dashboard:
+      #   CA_CERT_PEM  -> paste rootCA.crt PEM
+      #   CA_KEY_PEM   -> paste rootCA.key PEM
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
