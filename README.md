@@ -37,15 +37,41 @@ This fork adds a deployable wrapper in `cmd/mpc-server/` to run nanoca as a
 standalone ACME server for testing Fleet's Apple ACME configuration profile 
 flow. See `render.yaml` and `Dockerfile` for Render.com deployment.
 
-Configuration via env vars:
+### Generate a root CA
 
-| Var          | Default                   | Purpose                                  |
-|--------------|---------------------------|------------------------------------------|
-| `PORT`       | `10000`                   | HTTP listen port                         |
-| `BASE_URL`   | `https://cert.mpc.ad`     | Public base URL in ACME directory        |
-| `CA_CERT`    | `/etc/secrets/rootCA.crt` | Root CA cert (PEM)                       |
-| `CA_KEY`     | `/etc/secrets/rootCA.key` | Root CA key (PEM)                        |
-| `BADGER_DIR` | `/data/badger`            | Persistent storage path                  |
+Run the helper script (writes to the gitignored `secrets/` dir by default):
+
+```bash
+scripts/gen-ca.sh
+```
+
+It generates a PKCS#8 `rootCA.key` and a self-signed `rootCA.crt`, runs a
+sanity check, and prints the PEM blocks ready to paste into Render. Subject and
+validity are configurable via env vars (`CN`, `O`, `C`, `DAYS`, `BITS`).
+
+> The key must be PKCS#8 (a `PRIVATE KEY` PEM block). The script uses
+> `openssl genpkey` for this; the older `openssl genrsa` emits a PKCS#1
+> `RSA PRIVATE KEY` that the file signer rejects.
+
+### Supplying the CA: env-var PEM or file path
+
+The CA cert/key can be provided two ways. Raw PEM (`*_PEM`) takes precedence
+over the file paths — handy on platforms like Render that expose secrets as
+environment variables rather than mounted files.
+
+| Var            | Default                   | Purpose                                       |
+|----------------|---------------------------|-----------------------------------------------|
+| `PORT`         | `10000`                   | HTTP listen port                              |
+| `BASE_URL`     | `https://cert.mpc.ad`     | Public base URL in ACME directory             |
+| `CA_CERT_PEM`  | _(unset)_                 | Root CA cert as raw PEM (wins over `CA_CERT`) |
+| `CA_KEY_PEM`   | _(unset)_                 | Root CA key as raw PEM (wins over `CA_KEY`)   |
+| `CA_CERT`      | `/etc/secrets/rootCA.crt` | Root CA cert file path (PEM)                  |
+| `CA_KEY`       | `/etc/secrets/rootCA.key` | Root CA key file path (PKCS#8 PEM)            |
+| `BADGER_DIR`   | `/data/badger`            | Persistent storage path                       |
+
+On Render: `render.yaml` declares `CA_CERT_PEM` and `CA_KEY_PEM` with
+`sync: false`, so you paste the PEM values into the dashboard (they're not
+committed). The `*_PEM` parser accepts PKCS#8, PKCS#1 RSA, and SEC1 EC keys.
 
 POC use only: uses the `null` authorizer (any attested Apple device gets a 
 cert). Production deployments need a real authorizer.

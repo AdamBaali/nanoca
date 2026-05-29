@@ -9,10 +9,13 @@ services:
     envVars:
       - key: BASE_URL
         value: https://cert.mpc.ad
-      - key: CA_CERT
-        value: /etc/secrets/rootCA.crt
-      - key: CA_KEY
-        value: /etc/secrets/rootCA.key
+      # CA cert/key are pasted as PEM into the Render dashboard (sync: false
+      # keeps the secret values out of this committed file). Generate them with
+      # scripts/gen-ca.sh, then paste the printed PEM blocks here in Render.
+      - key: CA_CERT_PEM
+        sync: false
+      - key: CA_KEY_PEM
+        sync: false
       - key: BADGER_DIR
         value: /data/badger
     disk:
