@@ -31,114 +31,71 @@ mux.Handle("/", ca.Handler())
 
 ---
 
-## Deploying as a standalone server (AdamBaali fork addition)
+## Standalone server (fork addition)
 
-This fork adds a deployable wrapper in `cmd/mpc-server/` to run nanoca as a 
-standalone ACME server for testing Fleet's Apple ACME configuration profile 
-flow. See `render.yaml` and `Dockerfile` for Render.com deployment.
+`cmd/mpc-server/` wraps nanoca as a standalone ACME server. `Dockerfile` and
+`render.yaml` deploy it to Render. A live instance runs at `https://cert.mpc.ad`.
 
-### Demo CA (baked into the image)
+### Deploy
 
-For convenience this fork ships a throwaway demo CA in `deploy/demo-ca/`, which
-the `Dockerfile` bakes into the image. The demo therefore deploys to Render with
-**no CA configuration required**. That CA is disposable and public — never use
-it for anything real (see `deploy/demo-ca/README.md`). For real use, generate
-your own and override it (next sections).
+The image bakes in a demo CA (`deploy/demo-ca/`), so it deploys with no CA
+config. The demo CA is disposable and its key is public. Never use it for real
+certificates.
 
-### Generate a root CA
-
-Run the helper script (writes to the gitignored `secrets/` dir by default):
+To use your own CA, generate one and pass it in:
 
 ```bash
-scripts/gen-ca.sh
+scripts/gen-ca.sh   # writes PKCS#8 rootCA.key + rootCA.crt to secrets/, prints PEM for Render
 ```
 
-It generates a PKCS#8 `rootCA.key` and a self-signed `rootCA.crt`, runs a
-sanity check, and prints the PEM blocks ready to paste into Render. Subject and
-validity are configurable via env vars (`CN`, `O`, `C`, `DAYS`, `BITS`).
+The key must be PKCS#8 (a `PRIVATE KEY` block). `gen-ca.sh` uses
+`openssl genpkey`; the older `openssl genrsa` emits PKCS#1, which the file signer
+rejects. Set the subject with `CN`, `O`, `C`, `DAYS`, `BITS`. On Render, paste
+the printed PEM into `CA_CERT_PEM` and `CA_KEY_PEM`.
 
-> The key must be PKCS#8 (a `PRIVATE KEY` PEM block). The script uses
-> `openssl genpkey` for this; the older `openssl genrsa` emits a PKCS#1
-> `RSA PRIVATE KEY` that the file signer rejects.
+### Configuration
 
-### Supplying the CA: env-var PEM or file path
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `PORT` | `10000` | Listen port |
+| `BASE_URL` | `https://cert.mpc.ad` | Base URL in the ACME directory |
+| `CA_CERT_PEM` | _(unset)_ | Root CA cert as PEM |
+| `CA_KEY_PEM` | _(unset)_ | Root CA key as PEM |
+| `CA_CERT` | `/etc/secrets/rootCA.crt` | Root CA cert file |
+| `CA_KEY` | `/etc/secrets/rootCA.key` | Root CA key file (PKCS#8) |
+| `BADGER_DIR` | `/data/badger` | Storage path |
+| `TRUST_FORWARDED_PROTO` | `true` | Trust `X-Forwarded-Proto` from a proxy |
 
-The CA cert/key can be provided two ways. Raw PEM (`*_PEM`) takes precedence
-over the file paths — handy on platforms like Render that expose secrets as
-environment variables rather than mounted files.
+CA precedence: `*_PEM` > file paths > baked-in demo CA. The PEM parser accepts
+PKCS#8, PKCS#1 RSA, and SEC1 EC keys.
 
-| Var            | Default                   | Purpose                                       |
-|----------------|---------------------------|-----------------------------------------------|
-| `PORT`         | `10000`                   | HTTP listen port                              |
-| `BASE_URL`     | `https://cert.mpc.ad`     | Public base URL in ACME directory             |
-| `CA_CERT_PEM`  | _(unset)_                 | Root CA cert as raw PEM (wins over `CA_CERT`) |
-| `CA_KEY_PEM`   | _(unset)_                 | Root CA key as raw PEM (wins over `CA_KEY`)   |
-| `CA_CERT`      | `/etc/secrets/rootCA.crt` | Root CA cert file path (PEM)                  |
-| `CA_KEY`       | `/etc/secrets/rootCA.key` | Root CA key file path (PKCS#8 PEM)            |
-| `BADGER_DIR`   | `/data/badger`            | Persistent storage path                       |
-| `TRUST_FORWARDED_PROTO` | `true`           | Trust `X-Forwarded-Proto` from a reverse proxy (see below) |
+### Behind a TLS-terminating proxy
 
-Precedence: `*_PEM` > `CA_CERT`/`CA_KEY` file paths > the baked-in demo CA
-(the `Dockerfile` sets `CA_CERT`/`CA_KEY` to `/etc/nanoca/rootCA.*`). The
-`*_PEM` parser accepts PKCS#8, PKCS#1 RSA, and SEC1 EC keys.
+Render and Cloudflare terminate TLS and forward over plain HTTP, so `r.TLS` is
+nil and nanoca's RFC 8555 URL check rejects every signed POST with
+"HTTPS is required" (HTTP 400). The wrapper reads `X-Forwarded-Proto` and
+restores the HTTPS state. Set `TRUST_FORWARDED_PROTO=false` only when the process
+terminates TLS itself.
 
-On Render, to use your own CA instead of the demo one, add `CA_CERT_PEM` and
-`CA_KEY_PEM` in the dashboard with the PEM values printed by `scripts/gen-ca.sh`
-(values stay out of the repo).
+### Test profiles
 
-### Running behind a TLS-terminating proxy (Render, Cloudflare, etc.)
-
-**Symptom.** The ACME directory and `new-nonce` succeed, but every signed POST
-(`new-account`, `new-order`, ...) fails with HTTP 400
-`urn:ietf:params:acme:error:malformed` and the detail
-`JWS verification failed: URL validation failed: HTTPS is required`. On an Apple
-device this surfaces as an MDM command error (`ErrorCode 400`, "bad request")
-and the certificate never issues.
-
-**Cause.** RFC 8555 §6.4 requires the `url` field in each JWS protected header to
-match the request URL, and nanoca enforces that the request arrived over HTTPS by
-checking `r.TLS != nil` (`jose.go`). Render and Cloudflare terminate TLS at the
-edge and forward to the container over plain HTTP, so `r.TLS` is always `nil`
-inside the process even though the client used HTTPS. The check therefore
-rejects every authenticated request.
-
-**Fix.** The wrapper trusts the proxy's `X-Forwarded-Proto` header: when it
-reports `https`, the `forwardedTLS` middleware in `cmd/mpc-server/main.go`
-synthesizes an empty `tls.ConnectionState` so nanoca's check passes. The
-forwarded `Host` header already preserves `cert.mpc.ad`, so the reconstructed URL
-matches the JWS `url`. This runs in the wrapper rather than the library so no
-upstream files change.
-
-`TRUST_FORWARDED_PROTO` defaults to `true`. Set it to `false` only when the
-process is directly internet-facing over TLS (no proxy), since a client could
-otherwise spoof the header to bypass the HTTPS requirement.
-
-## Testing with Apple configuration profiles
-
-`deploy/profiles/` holds two ready-to-use macOS configuration profiles that
-exercise the full attestation flow against the live test server at
-`https://cert.mpc.ad`. They carry no secrets and point at the public test CA, so
-anyone can apply them through an MDM (Fleet, or another) and watch a certificate
-issue.
+`deploy/profiles/` holds two macOS profiles that run the attestation flow against
+`https://cert.mpc.ad`. They carry no secrets and point at the public test CA.
+Apply them through Fleet or another MDM.
 
 | Profile | Payload | Purpose |
 |---------|---------|---------|
-| `deploy/profiles/nanoca-root-ca-trust.mobileconfig` | `com.apple.security.root` | Installs the test root CA so the issued certificate chains validate. |
-| `deploy/profiles/nanoca-acme.mobileconfig` | `com.apple.security.acme` | Requests an identity certificate. Hardware bound, Secure Enclave attestation, EC P-384. |
+| `nanoca-root-ca-trust.mobileconfig` | `com.apple.security.root` | Trusts the test root CA so issued certs validate |
+| `nanoca-acme.mobileconfig` | `com.apple.security.acme` | Requests an identity cert: hardware bound, Secure Enclave attestation, EC P-384 |
 
-The ACME profile sets the client identifier and subject common name from
-`$FLEET_VAR_HOST_HARDWARE_SERIAL`, a Fleet profile variable that resolves to the
-host serial. With another MDM, replace it with that MDM's per-host serial
-variable or a static identifier.
+The ACME profile sets the client identifier and subject CN from
+`$FLEET_VAR_HOST_HARDWARE_SERIAL`, a Fleet variable. With another MDM, use its
+per-host serial variable or a static value. See `deploy/profiles/README.md` to
+verify issuance.
 
-When a Mac installs the profiles it trusts the root CA, then runs the flow:
-`new-account`, `new-order`, a `device-attest-01` challenge backed by Secure
-Enclave attestation, then `finalize`. A successful run issues a client
-certificate whose common name is the host serial, signed by the test CA. See
-`deploy/profiles/README.md` for verification commands.
+### Limits
 
-POC use only. The server uses the `null` authorizer, so any device that passes
-Apple attestation gets a certificate. It is not linked to Apple Business Manager
-tokens yet, so ABM organization membership is not checked. The signing CA is a
-throwaway demo CA whose private key is public. Production deployments need a real
-authorizer and a real CA.
+POC only. The server uses the `null` authorizer, so any attested device gets a
+cert. It is not linked to Apple Business Manager tokens, so ABM membership is not
+checked. The demo CA key is public. Use a real authorizer and a real CA for
+production.
