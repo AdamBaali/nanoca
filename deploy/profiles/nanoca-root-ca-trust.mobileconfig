@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadType</key><string>Configuration</string>
+  <key>PayloadVersion</key><integer>1</integer>
+  <key>PayloadIdentifier</key><string>ad.mpc.nanoca.trust</string>
+  <key>PayloadUUID</key><string>083F7C51-5054-40AC-85AB-62B5D6B720AE</string>
+  <key>PayloadDisplayName</key><string>nanoca root CA trust</string>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadType</key><string>com.apple.security.root</string>
+      <key>PayloadVersion</key><integer>1</integer>
+      <key>PayloadIdentifier</key><string>ad.mpc.nanoca.trust.cert</string>
+      <key>PayloadUUID</key><string>12AD66B4-5088-426C-B36A-0F92768DFB26</string>
+      <key>PayloadDisplayName</key><string>MPC Demo Root CA</string>
+      <key>PayloadCertificateFileName</key><string>rootCA.crt</string>
+      <key>PayloadContent</key>
+      <data>
+        LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUZkekNDQTEr
+        Z0F3SUJBZ0lVZjAwWEdIb09raHBlNWxUK08rVUhrMzJnWnp3d0RR
+        WUpLb1pJaHZjTkFRRUwKQlFBd1N6RVpNQmNHQTFVRUF3d1FUVkJE
+        SUVSbGJXOGdVbTl2ZENCRFFURWhNQjhHQTFVRUNnd1lUVzkxYm5S
+        aAphVzRnVUdGMGFDQkRiMjV6ZFd4MGFXNW5NUXN3Q1FZRFZRUUdF
+        d0pCUkRBZUZ3MHlOakExTWpreE1UUXlNalphCkZ3MHpOakExTWpZ
+        eE1UUXlNalphTUVzeEdUQVhCZ05WQkFNTUVFMVFReUJFWlcxdklG
+        SnZiM1FnUTBFeElUQWYKQmdOVkJBb01HRTF2ZFc1MFlXbHVJRkJo
+        ZEdnZ1EyOXVjM1ZzZEdsdVp6RUxNQWtHQTFVRUJoTUNRVVF3Z2dJ
+        aQpNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUNEd0F3Z2dJS0FvSUNB
+        UUNWamd1TGtmYXYrbU9WUFRzSzVXYzZZL0xLCittOE9HajIyOFhh
+        ZDVnNGowNitTd3JJWmt5ZFJnbjdJQ2JWVTgweVAwd0d2MHRJUitB
+        a0N0TFVDaGMwdWlwUlEKYkZZZDV5TTRhT2xrbDNRUVI4UUxmdGJm
+        NXhoWUl2QURmVXg3dXZFQjZ4dWtpVnU2K01mTHJFOEU2eTh2aytK
+        SAprMU5KQWwrc0MvRTFEQ0E1dGJGQmp4bUxkZkJxMlFZaVlhbS9m
+        QjhQM3NaV25WeU5DY0ZnRmpuZFl6T2czWStFCnNmaG50VTFqeDZL
+        QVZ6eFFtRzNqbm9Sa1lyTkpUNDBia0VNemZHVFlaNjJmQUpDMHl0
+        RFltZ2NrOHBYUFp0ZS8KdHhWR1V4cEU2SlpXTDFTajFhQzVZU21E
+        MFlPTDRUcXptRTVpR1dsTzFXU3hJNVUyVkFVS29vR2xGU09hZUxV
+        VgpFSE1NOWJSSE9EU0xnRkJoS1Joa05MMTE1dVl5RlZsdDFXbFlP
+        UE9Ma1dHeTMvQTJkOXB5YXVnN0EvM2FGL3gwCmhkcXlJdVFReHRp
+        cGJTWTlISm80aHpDNnJrRDBobW1PVWd4Z3ZGYU16WERmMUJsaEhH
+        Qm5YZ0htZFB5d2NIVm4KNTBmaExVMExKMndYM2VWdDN5V3B2LzhS
+        dzJRck8vR2xqYy9BYng0dFZMY3hqTGo3Tkh1Ym00dkk4SHRSRFhV
+        eQo3eUNBWFdjcW94RGI1VjJGMlp5TFU4R3NjTVhYQ2JSbnlRRCtO
+        LzdQWnI1NXdnTnI3bXExT1NzbGtCRzVzMlJUCmhGa2RXd0JQSlBF
+        S3MrU0RVbThMWEY3dWtPOUJ0VEtwd3k4RWJZbXAwWlJvY2hMbVdp
+        RnRWeWQ1bjBMMSsvVUEKQ2xPeHFUNUxBT2lXMWo0QUF3SURBUUFC
+        bzFNd1VUQWRCZ05WSFE0RUZnUVVQbzVpTGdYRXUyNGNVeEFDY2sr
+        awpoRHRJU3JBd0h3WURWUjBqQkJnd0ZvQVVQbzVpTGdYRXUyNGNV
+        eEFDY2sra2hEdElTckF3RHdZRFZSMFRBUUgvCkJBVXdBd0VCL3pB
+        TkJna3Foa2lHOXcwQkFRc0ZBQU9DQWdFQWVxbnVaYVZacjNtVTJN
+        TjAzbU5VR051Vm0xMnYKK1YvQ3lIckFtRnN1SWlmTzBlYUY3M2dl
+        MTBZTkFJLytPOXZOMzYzWUhURW9FVi9OdndQNFNkRkY2MS83Sjg4
+        OQp1NXdlbGlkb1J4NjRNemZuWlZCbFZ0ZXUxdDZuZFJRZlpidlRI
+        cTZOb3dBdWtDNHc5K1NPZTd2ZWlMY3YxcTdTClZrd3VPeDlYL0hv
+        RW5oWTNlN0lraUlmaXRzVXA1amhUL2h1MmZWOURZSlRjMnc1VWhS
+        SitLZzhIOTV6ZklsNDQKL3FUUlpvR0t2KzB5bE94NEplRXU1RHoy
+        SGtMOG1udkF6K3hVbWNYYnU4SGJJQm1RV3MySmhMVUhDZDBFSm1N
+        bApPQi9CRGcrNzBoWFJubkdaZkMxOFVoSGZ4ZzRuVmtMTTFyR1Vl
+        dUJ2VkkxeGVLNEdKejd4bHFDYVhFYUdTMk5xCkhWcTNGeVdWbWJ2
+        b1cwSVRud1R4eEdMelQzcjhIa1FwMElhMndzZ3hYU0V4UmZyWmJu
+        bkpqQnV0NEpVenZRZ2IKS21WMmtyT3hMR3Q1aWxGd3NSOFk0b3VE
+        NTlMUXBRK3dPOVVxckVOc0JwUjVRTUJVZ21CYXk0T2Fkd05WVVQ1
+        SQozREcwZzRjQVpZa09CMVhjaUU4MDFzdGY0Rmx4YnVhTEZ5NkFw
+        a1U5ZjhTM09KT09XT3h0MEZEVmFKZkFlRkcrCkNJOURGV0F5VGgx
+        K1loN1VNUnpSZjRTbUhGUHIySjNGSkZ0ajV1YzRCK1R4SDVIK0hP
+        djhuZ3NTNmpTWi9ldzkKT2R4ZE9lUWQ0VWwwaEd2YnJ0ZG5ONVRJ
+        NU1sQjJEU0I5NDMrSnZRTklZeUt5RDk4M1NZZVFDdituMThONUFh
+        dwpRNUVkRE1MV3JaMTRSZG89Ci0tLS0tRU5EIENFUlRJRklDQVRF
+        LS0tLS0K
+      </data>
+    </dict>
+  </array>
+</dict>
+</plist>
