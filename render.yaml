@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: mpc-nanoca-server
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: BASE_URL
+        value: https://cert.mpc.ad
+      - key: CA_CERT
+        value: /etc/secrets/rootCA.crt
+      - key: CA_KEY
+        value: /etc/secrets/rootCA.key
+      - key: BADGER_DIR
+        value: /data/badger
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

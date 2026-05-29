@@ -1,3 +1,16 @@
 .DS_Store
 mdm_storage/
 nanomdm
+
+# Local secrets — never commit
+secrets/
+*.key
+*.pem
+
+# Local build artifacts
+/mpc-server
+/nanoca-build
+
+# Editor / OS
+.vscode/
+.idea/
