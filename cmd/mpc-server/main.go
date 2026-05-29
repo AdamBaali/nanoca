@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/brandonweeks/nanoca"
 	nullauthorizer "github.com/brandonweeks/nanoca/authorizers/null"
@@ -74,8 +76,43 @@ func run() error {
 		_, _ = w.Write([]byte("ok"))
 	})
 
+	// trustForwardedProto defaults on: this service runs behind Render/Cloudflare,
+	// which terminate TLS and forward over plain HTTP. nanoca's RFC 8555 URL check
+	// requires r.TLS != nil, so without this the ACME client gets
+	// "HTTPS is required" on every POST. Set TRUST_FORWARDED_PROTO=false only when
+	// the process is directly internet-facing over TLS.
+	trustForwardedProto := envOr("TRUST_FORWARDED_PROTO", "true") != "false"
+
 	log.Printf("nanoca listening on :%s, directory: %s/acme/directory", port, baseURL)
-	return http.ListenAndServe(":"+port, mux)
+	return http.ListenAndServe(":"+port, forwardedTLS(mux, trustForwardedProto))
+}
+
+// forwardedTLS synthesizes a TLS connection state when a trusted reverse proxy
+// reports the original request arrived over HTTPS (X-Forwarded-Proto: https).
+//
+// Why: nanoca enforces RFC 8555 §6.4 by checking r.TLS != nil in jose.go's
+// validateRequestURL. Behind Render/Cloudflare, TLS is terminated at the edge
+// and the container is reached over plain HTTP, so r.TLS is nil and every
+// signed ACME POST is rejected with "JWS verification failed: URL validation
+// failed: HTTPS is required" (HTTP 400 malformed). The proxy preserves the Host
+// header, so only the missing TLS state needs to be reconstructed; nanoca only
+// checks that r.TLS is non-nil, so an empty state is sufficient. Done here in
+// the wrapper to avoid modifying the upstream library.
+func forwardedTLS(next http.Handler, trust bool) http.Handler {
+	if !trust {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.TLS == nil {
+			// X-Forwarded-Proto may be a comma-separated chain; the first hop is
+			// the client-facing scheme.
+			proto, _, _ := strings.Cut(r.Header.Get("X-Forwarded-Proto"), ",")
+			if strings.EqualFold(strings.TrimSpace(proto), "https") {
+				r.TLS = &tls.ConnectionState{HandshakeComplete: true}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // loadCert parses an X.509 certificate from raw PEM (certPEM) if provided,
