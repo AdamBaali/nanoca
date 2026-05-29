@@ -113,5 +113,32 @@ upstream files change.
 process is directly internet-facing over TLS (no proxy), since a client could
 otherwise spoof the header to bypass the HTTPS requirement.
 
-POC use only: uses the `null` authorizer (any attested Apple device gets a 
-cert). Production deployments need a real authorizer.
+## Testing with Apple configuration profiles
+
+`deploy/profiles/` holds two ready-to-use macOS configuration profiles that
+exercise the full attestation flow against the live test server at
+`https://cert.mpc.ad`. They carry no secrets and point at the public test CA, so
+anyone can apply them through an MDM (Fleet, or another) and watch a certificate
+issue.
+
+| Profile | Payload | Purpose |
+|---------|---------|---------|
+| `deploy/profiles/nanoca-root-ca-trust.mobileconfig` | `com.apple.security.root` | Installs the test root CA so the issued certificate chains validate. |
+| `deploy/profiles/nanoca-acme.mobileconfig` | `com.apple.security.acme` | Requests an identity certificate. Hardware bound, Secure Enclave attestation, EC P-384. |
+
+The ACME profile sets the client identifier and subject common name from
+`$FLEET_VAR_HOST_HARDWARE_SERIAL`, a Fleet profile variable that resolves to the
+host serial. With another MDM, replace it with that MDM's per-host serial
+variable or a static identifier.
+
+When a Mac installs the profiles it trusts the root CA, then runs the flow:
+`new-account`, `new-order`, a `device-attest-01` challenge backed by Secure
+Enclave attestation, then `finalize`. A successful run issues a client
+certificate whose common name is the host serial, signed by the test CA. See
+`deploy/profiles/README.md` for verification commands.
+
+POC use only. The server uses the `null` authorizer, so any device that passes
+Apple attestation gets a certificate. It is not linked to Apple Business Manager
+tokens yet, so ABM organization membership is not checked. The signing CA is a
+throwaway demo CA whose private key is public. Production deployments need a real
+authorizer and a real CA.

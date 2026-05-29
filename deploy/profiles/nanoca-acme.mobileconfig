@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadDisplayName</key><string>MPC nanoca ACME</string>
+  <key>PayloadIdentifier</key><string>ad.mpc.nanoca.acme</string>
+  <key>PayloadOrganization</key><string>Mountain Path Consulting</string>
+  <key>PayloadType</key><string>Configuration</string>
+  <key>PayloadUUID</key><string>46C0C6AF-EAC6-4E8E-A890-EF25E445C518</string>
+  <key>PayloadVersion</key><integer>1</integer>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadType</key><string>com.apple.security.acme</string>
+      <key>PayloadVersion</key><integer>1</integer>
+      <key>PayloadIdentifier</key><string>ad.mpc.nanoca.acme.payload</string>
+      <key>PayloadUUID</key><string>AB27DF58-99BE-4EB9-B493-7C15E87C852B</string>
+      <key>PayloadDisplayName</key><string>nanoca identity</string>
+      <key>DirectoryURL</key><string>https://cert.mpc.ad/acme/directory</string>
+      <key>ClientIdentifier</key><string>$FLEET_VAR_HOST_HARDWARE_SERIAL</string>
+      <key>KeyType</key><string>ECSECPrimeRandom</string>
+      <key>KeySize</key><integer>384</integer>
+      <key>HardwareBound</key><true/>
+      <key>Attest</key><true/>
+      <key>Subject</key>
+      <array>
+        <array><array><string>CN</string><string>$FLEET_VAR_HOST_HARDWARE_SERIAL</string></array></array>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>
