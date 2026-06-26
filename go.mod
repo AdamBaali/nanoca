@@ -6,6 +6,8 @@ require (
 	github.com/dgraph-io/badger/v4 v4.9.1
 	github.com/fxamacker/cbor/v2 v2.9.1
 	github.com/go-jose/go-jose/v4 v4.1.4
+	github.com/google/go-attestation v0.6.1
+	github.com/google/go-tpm v0.9.8
 	github.com/micromdm/nanolib v0.5.1
 	github.com/micromdm/nanomdm v0.9.0
 	golang.org/x/crypto v0.49.0
