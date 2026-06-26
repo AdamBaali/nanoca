@@ -8,32 +8,45 @@
 
 ---
 
-## 0. TL;DR — the plan changed once we read the code
+## 0. The goal, stated plainly
 
-The first sketch assumed we'd *build* a built‑in CA. We won't — **Fleet already shipped one.**
+**Ship a full built‑in ACME certificate authority inside Fleet — Fleet *becomes* the CA that issues
+certs to devices.** Not just device attestation. Not a proxy to someone else's CA. The full deal,
+across every device type.
 
-- **Fleet 4.84** added a built‑in **ACME server** for MDM enrollment identity, with a Premium
-  **"Require hardware attestation"** toggle. Only DEP‑synced, attestation‑passing **Apple Silicon Macs**
-  get ACME today. (FR **#15611** → story **#31289**, sub‑tasks **#40991/#40994**.)
+The foundation already shipped, but it's narrow:
+
+- **Fleet 4.84** added a built‑in **ACME server**, but scoped to **MDM enrollment‑identity** certs,
+  gated on Apple attestation, **DEP Macs only**. (FR **#15611** → story **#31289**, sub‑tasks
+  **#40991/#40994**.)
 - **Fleet 4.86** surfaced hardware‑bound ACME certs in Host details (**#42827/#46725**) and handled
   **renewal** via `$FLEET_VAR_CERTIFICATE_RENEWAL_ID` (**#40639**).
 - In code: `server/mdm/acme/**` implements all 10 RFC 8555 endpoints, is **wired live** in
   `cmd/fleet/serve.go`, validates Apple `device-attest-01` end‑to‑end, and **already shares the CA
   signer and `identity_certificates` table with SCEP** (migration `20260401153000`).
 
-So "Phase 1 — unify the CA core" is **largely done in production.** The real frontier — and what this
-plan targets — is the open work:
+So the **plumbing** of "Fleet as a CA" exists; the **product** does not yet. The full deal is five
+moves on top of that foundation:
 
-1. **Extend ACME + attestation beyond Apple‑DEP‑Macs to *every* device type** (the user's core ask).
-2. **Leverage macOS 27 ("Golden Gate")**, where attested ACME identities become the credential for
+1. **Be a general‑purpose issuing CA** — issue device certs for Wi‑Fi / 802.1X, VPN, and app/service
+   identity, not only MDM enrollment. Attestation is a *trust gate*, not the product.
+2. **Cover every device type** — Apple (foundation done), **Linux & Windows (TPM)**, and **Android**.
+   These are the gaps Brandon named: Linux TPM is missing attestation; Android & others aren't wired.
+3. **ABM‑driven, flip‑a‑switch setup** — pull device info from the ABM API so standing up the CA is
+   trivial (Brandon's "make it super easy to set it all up and then get more device info").
+4. **Leverage macOS 27 ("Golden Gate")**, where attested ACME identities become the credential for
    DDM‑delivered VPN, Wi‑Fi, and Platform SSO.
-3. **Make "Fleet CA" a coherent product surface**, including the open BYO/external‑CA requests
-   (**#44789**, **#43376**).
-4. **Harden** the shipped server (bug **#46282**; missing `revokeCert`/`keyChange`; attestation
+5. **Harden** the shipped server (bug **#46282**; missing `revokeCert`/`keyChange`; attestation
    public‑key persistence TODO).
 
-`nanoca` is the prototype vehicle for #1–#2: it's the same architecture as Fleet's `server/mdm/acme`,
-it's *not* the Fleet repo, and it already has the pluggable seams we need.
+**Direction — Fleet *is* the CA, not a proxy to one.** The open FRs **#44789** (BYO ACME server) and
+**#43376** (external CA for enrollment certs) point the *other* way: customers keeping their own PKI.
+Worth knowing they exist, but our bet is the opposite — a built‑in CA good enough that the 80% never
+stand up NDES or buy DigiCert. External CAs stay supported for the enterprise tail; built‑in is the
+default.
+
+`nanoca` is the prototype vehicle for moves #1–#3: it's the same architecture as Fleet's
+`server/mdm/acme`, it's *not* the Fleet repo, and it already has the pluggable seams we need.
 
 ---
 
@@ -107,10 +120,12 @@ Enrollment** (BYOD privacy — design for it).
 
 ---
 
-## 3. The thesis: one built‑in ACME CA, strongest attestation each platform allows
+## 3. The thesis: a general‑purpose built‑in CA, every device, strongest attestation each allows
 
-Extend the *existing* built‑in ACME CA from "Apple DEP Macs only" to **every managed device**, each
-getting the strongest hardware‑backed identity its silicon supports:
+Two axes make this the "full deal" rather than what shipped. **Purpose:** the CA issues certs for
+whatever the device needs — Wi‑Fi / 802.1X, VPN, app & service identity, MDM enrollment — driven by
+**cert templates**, not one hard‑coded enrollment flow. **Reach:** every managed device gets identity,
+with the strongest hardware‑backed attestation its silicon supports as the trust gate:
 
 - **Apple (Mac / iOS / iPadOS / tvOS / visionOS)** — `device-attest-01`, Secure Enclave, EC P‑384.
   Already works for DEP Macs; extend to iOS/iPadOS and to **BYOD/User Enrollment** (no serial/UDID —
@@ -167,10 +182,12 @@ Fix #46282 (5XX → proper ACME problem doc on bad account id); implement `revok
 (in the directory, unbuilt); persist the attestation **leaf public key** (`challenge.go:170`) for
 later re‑validation. Low risk, immediately useful, no design decisions required.
 
-**1b — First‑class "Fleet CA" + external/BYO CA.** *(Fleet; needs §6 decisions)*
-Add `CATypeFleetCA` alongside ndes/digicert/etc. in `server/fleet/certificate_authorities.go`, so the
-built‑in CA is a visible, configurable object — and the slot where **#44789** (BYO ACME) and **#43376**
-(external CA for enrollment certs) plug in. One settings surface; one mental model.
+**1b — Turn it into a general‑purpose issuing CA.** *(Fleet; needs §6 decisions)*
+Add `CATypeFleetCA` as a first‑class, configurable CA object in
+`server/fleet/certificate_authorities.go`, and drive issuance from **cert templates** (Wi‑Fi / VPN /
+802.1X / app identity) — not only the enrollment‑identity path. This is the leap from "attestation
+check" to "the CA customers point device certs at." (Fleet already has a `certificate_templates`
+model — wire it to the built‑in CA.)
 
 **1c — Generalize the attestation layer to multiple formats.** *(nanoca first, then Fleet)*
 In nanoca: add `verifiers/tpm` implementing `AttestationVerifier` for the TPM format (EK cert chain →
